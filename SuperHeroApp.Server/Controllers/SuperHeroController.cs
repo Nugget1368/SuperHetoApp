@@ -67,7 +67,11 @@ namespace SuperHeroApp.Server.Controllers
 			try
 			{
 				var result = await service.DeleteHero(id);
-				return Ok(result.Message);
+				if (result.Success)
+				{
+					return Ok(result.Message);
+				}
+				return NotFound(result.Message);
 			}
 			catch (Exception ex)
 			{
