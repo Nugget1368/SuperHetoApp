@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SuperHeroApp.Server.Context;
+using SuperHeroApp.Server.Services;
 using SuperHeroApp.Shared.Entities;
 
 namespace SuperHeroApp.Server.Controllers
@@ -10,95 +11,63 @@ namespace SuperHeroApp.Server.Controllers
 	[ApiController]
 	public class SuperHeroController : ControllerBase
 	{
-		private readonly SuperHeroContext context;
-
+		private readonly HeroService service;
 		//TODO: Create Service and inject Service instead of Context
-		public SuperHeroController(SuperHeroContext context)
+		public SuperHeroController(HeroService service)
 		{
-			this.context = context;
+			this.service = service;
 		}
 		[HttpGet]
 		public async Task<ActionResult<List<SuperHero>>> GetAllHeroes()
 		{
-			try
+			var result = await service.GetAllHeroesAsync();
+			if (result.Success)
 			{
-				var heroes = await this.context.Heroes.ToListAsync();
-				return Ok(heroes);
+				return Ok(result.Result);
 			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			return BadRequest(result.Message);
 		}
 
 		[HttpGet("{id}")]
 		public async Task<ActionResult<SuperHero>> GetHero(int id)
 		{
-			try
+			var result = await service.GetHeroAsync(id);
+			if (result.Success)
 			{
-				var hero = await this.context.Heroes.FindAsync(id);
-				return Ok(hero);
+				return Ok(result.Result);
 			}
-			catch
-			{
-				return NotFound();
-			}
+			return NotFound(result.Message);
 		}
 
 		[HttpPost]
 		public async Task<ActionResult> AddHero(SuperHero hero) //TODO: Create DTO Superhero
 		{
-			try
+			var result = await this.service.AddHeroAsync(hero);
+			if (result.Success)
 			{
-				this.context.Heroes.Add(hero);
-				await context.SaveChangesAsync();
-
-				return Ok();
+				return Ok(result.Message);
 			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			return BadRequest(result.Message);
 		}
 
 		[HttpPut]
 		public async Task<ActionResult> EditHero(SuperHero heroUpdate)
 		{
-			var dbHero = await this.context.Heroes.FindAsync(heroUpdate.Id);
-			if (dbHero == null)
+			var result = await service.EditHero(heroUpdate);
+			if (result.Success)
 			{
-				return NotFound();
+				return Ok(result.Message);
 			}
-			try
-			{
-				//TODO: Change the sets
-				dbHero.Name = heroUpdate.Name;
-				dbHero.FirstName = heroUpdate.FirstName;
-				dbHero.LastName = heroUpdate.LastName;
-				dbHero.City = heroUpdate.City;
-
-				await this.context.SaveChangesAsync();
-				return Ok();
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			return NotFound(result.Message);
 		}
 
 		[HttpDelete]
 		public async Task<ActionResult> DeleteHero(int id)
 		{
-			var hero = await this.context.Heroes.FindAsync(id);
-			if (hero == null)
-			{
-				return NotFound();
-			}
 			try
 			{
-				this.context.Heroes.Remove(hero);
-				await context.SaveChangesAsync();
-				return Ok("Hero removed.");
+				var result = await service.DeleteHero(id);
+				return Ok(result.Message);
 			}
 			catch (Exception ex)
 			{
